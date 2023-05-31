@@ -12,7 +12,7 @@ namespace App
     public partial class MainPage : ContentPage
     {
         Dictionary<Button, Position> ButtonPosition = new Dictionary<Button, Position>();
-        char[,] state = new char[3,3];
+        string[,] state = new string[3,3];
         public MainPage()
         {
             InitializeComponent();
@@ -36,7 +36,7 @@ namespace App
                     button.Clicked += Button_Clicked;
                     g.Children.Add(button);
                     ButtonPosition.Add(button, new Position() { X = j, Y = i }) ;
-                    state[j, i] = ' ';
+                    state[j, i] = " ";
                 }
             }
         }
@@ -46,7 +46,7 @@ namespace App
             {
                 for (int j = 0; j < 3; j++)
                 {
-                    state[j, i] = ' ';
+                    state[j, i] = " ";
                 }
             }
             foreach(var kvp in ButtonPosition)
@@ -55,19 +55,38 @@ namespace App
             }
         }
 
-        private async Task<bool> Check()
+        private async Task ScaleSelect(string x)
+        {
+            foreach (var kvp in ButtonPosition)
+            {
+                if(kvp.Key.Text == x)
+                {
+                    await kvp.Key.ScaleTo(1.5);
+                    await kvp.Key.ScaleTo(1);
+                }
+            }
+        }
+
+        private async Task ScaleAll()
+        {
+            await g.ScaleTo(1.5);
+            await g.ScaleTo(1);
+        }
+
+        private async Task<bool> Check(string x, string s)
         {
             for (int i = 0; i < 3; i++)
             {
                 bool row = true;
                 for(int j = 0;j < 3; j++)
                 {
-                    if (!(state[j, i] == 'X'))
+                    if (!(state[j, i] == x))
                         row = false;
                 }
                 if (row)
                 {
-                    await DisplayAlert("Game Over", "You Won", "Close");
+                    await ScaleSelect(x);
+                    await DisplayAlert("Game Over", s, "Close");
                     Clear();
                     return true;
                 }
@@ -77,30 +96,50 @@ namespace App
                 bool column = true;
                 for(int j = 0; j < 3; j++)
                 {
-                    if (!(state[i, j] == 'X'))
+                    if (!(state[i, j] == x))
                         column = false;
                 }
                 if (column)
                 {
-                    await DisplayAlert("Game Over", "You Won", "Close");
+                    await ScaleSelect(x);
+                    await DisplayAlert("Game Over", s, "Close");
                     Clear();
                     return true;
                 }
             }
-            if (state[0,0] == 'X' && state[1,1] == 'X' && state[2,2] == 'X')
+            if (state[0,0] == x && state[1,1] == x && state[2,2] == x)
             {
-                await DisplayAlert("Game Over", "You Won", "Close");
+                await ScaleSelect(x);
+                await DisplayAlert("Game Over", s, "Close");
                 Clear(); 
                 return true;
             }
-            if (state[2, 0] == 'X' && state[1, 1] == 'X' && state[0, 2] == 'X')
+            if (state[2, 0] == x && state[1, 1] == x && state[0, 2] == x)
             {
-                await DisplayAlert("Game Over", "You Won", "Close");
+                await ScaleSelect(x);
+                await DisplayAlert("Game Over", s, "Close");
                 Clear();
                 return true;
             }
+            for (int i = 0; i < 3; i++)
+            {
+                bool row = true;
+                for (int j = 0; j < 3; j++)
+                {
+                    if (!(state[j, i] == x))
+                        row = false;
+                }
+                if (row)
+                {
+                    await ScaleSelect(x);
+                    await DisplayAlert("Game Over", s, "Close");
+                    Clear();
+                    return true;
+                }
+            }
             if (await DrawCheck())
             {
+                await ScaleAll();
                 await DisplayAlert("Game Over", "Draw", "Close");
                 Clear();
                 return true;
@@ -114,7 +153,7 @@ namespace App
             {
                 for (int j = 0; j < 3; j++)
                 {
-                    if (state[j, i] == ' ')
+                    if (state[j, i] == " ")
                         return false;
                 }
             }
@@ -126,26 +165,39 @@ namespace App
         {
             var btn = sender as Button;
             var position = ButtonPosition[btn];
-            state[position.X, position.Y] = 'X';
-            btn.Text = "X";
-            if(!await Check())
+            if(state[position.X, position.Y] == " ")
             {
-                eturn();
-                await Check();
+                state[position.X, position.Y] = "X";
+                btn.Text = "X";
+                await btn.FadeTo(0);
+                await btn.FadeTo(1);
+            }
+            else
+            {
+                await DisplayAlert("Misinput", "Don't try to overwrite positions", "Sorry >~<");
+            }
+            if (!await Check("X", "You won"))
+            {
+                await eturn();
+                await Check("O", "You Lost");
             }
         }
         
-        private void eturn()
+        private async Task eturn()
         {
             Random rand = new Random();
             int x = (int)rand.Next(3);
             int y = (int)rand.Next(3);
             while(true)
             {
-                if (state[x, y] == ' ')
+                
+                if (state[x, y] == " ")
                 {
-                    state[x, y] = 'O';
-                    GetButtonByPosition(x, y).Text = "O";
+                    Button btn = await GetButtonByPosition(x, y);
+                    state[x, y] = "O";
+                    btn.Text = "O";
+                    await btn.FadeTo(0);
+                    await btn.FadeTo(1);
                     break;
                 }
                 else
@@ -154,9 +206,8 @@ namespace App
                     y = (int)rand.Next(3);
                 }
             }
-            
         }
-        private Button GetButtonByPosition(int x, int y)
+        private async Task<Button> GetButtonByPosition(int x, int y)
         {
             foreach (var kvp in ButtonPosition)
             {

@@ -15,6 +15,6 @@
             <ColumnDefinition Width="33*" />
             <ColumnDefinition Width="33*" />
         </Grid.ColumnDefinitions>
-        <Button x:Name="bStart" Clicked="bStart_Clicked" HorizontalOptions="Center" VerticalOptions="Center" Text="Start Game"/>
+        <Button x:Name="bStart" Clicked="bStart_Clicked" HorizontalOptions="Center" VerticalOptions="Center" Text="Start Game" Grid.Column="1" Grid.Row="1"/>
     </Grid>
 </ContentPage>
